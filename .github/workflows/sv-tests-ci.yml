@@ -28,23 +28,37 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Update apt repos
-        run: |
-          sudo apt-get update -qq
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('conf/requirements.txt') }}
+          restore-keys: pip-
+
       - name: Install common dependencies
         run: |
+          sudo apt-get update -qq
           sudo apt install -y python3 python3-pip git wget file
           pip install --upgrade setuptools
           pip install -r conf/requirements.txt
-      - name: Install VeeR dependencies
-        run: |
-          sudo apt install -y cpanminus
-          sudo cpanm Bit::Vector JSON
+
       - name: Setup Rust
         if: ${{ matrix.tool.rust_ver }}
         run: |
           rustup install ${{ matrix.tool.rust_ver }}
           rustup default ${{ matrix.tool.rust_ver }}
+
+      - name: Cache Cargo registry and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            third_party/tools/${{ matrix.tool.repo || matrix.tool.name }}/target
+          key: cargo-${{ matrix.tool.name }}-${{ hashFiles('third_party/tools/**/Cargo.lock') }}
+          restore-keys: cargo-${{ matrix.tool.name }}-
+
       - name: Checkout the tool submodule
         run: |
           git config --global url.https://github.com/.insteadOf git://github.com/
@@ -58,16 +72,29 @@ jobs:
             git submodule update --init --recursive --depth 1 ${{ matrix.tool.submodules }}
             popd
           fi
+
+      - name: Cache third party tests and cores
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/tests
+            third_party/cores
+          key: third-party-${{ hashFiles('.gitmodules') }}
+          restore-keys: third-party-
+
       - name: Checkout third party tests and cores
         run: |
           git submodule update --init --recursive --depth 1 third_party/tests
           git submodule update --init --recursive --depth 1 third_party/cores
+
       - name: Build
         run: |
           make ${{ matrix.tool.name }} -j$(nproc)
+
       - name: Check
         run:
           make info
+
       - name: Run
         run: |
           BIG_GENERATORS_EXPR=$(echo $BIG_GENERATORS | sed 's/ /\\|/g')
@@ -77,9 +104,11 @@ jobs:
           if [[ "${JOBS}x" == "x" ]]; then export JOBS=$(nproc); fi
           for gen in ${STABLE_GENERATORS}; do echo "==GEN stable $gen -j $JOBS" ; make generate-$gen -j${JOBS}; make -j ${JOBS}; done
           for gen in ${UNSTABLE_GENERATORS}; do echo "==GEN unstable $gen" ; make generate-$gen; make; done
+
       - name: Generate Report
         run: |
           make report
+
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:

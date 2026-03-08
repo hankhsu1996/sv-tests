@@ -23,6 +23,9 @@ jobs:
       BIG_GENERATORS: "fusesoc black-parrot"
       DEBIAN_FRONTEND: "noninteractive"
 
+    permissions:
+      contents: read
+
     name: ${{ matrix.tool.name }}
     runs-on: ubuntu-latest
     steps:
@@ -109,9 +112,32 @@ jobs:
         run: |
           make report
 
-      - name: Upload report
+      - name: Upload report artifact
         uses: actions/upload-artifact@v4
         with:
           name: report_${{ matrix.tool.name }}
-          path: |
-            out/report/
+          path: out/report/
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/report/
+
+  Deploy:
+    if: github.ref == 'refs/heads/master'
+    needs: Run
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

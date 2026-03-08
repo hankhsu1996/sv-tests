@@ -164,7 +164,14 @@ $(INSTALL_DIR)/bin/circt-verilog:
 		-DCIRCT_SLANG_FRONTEND_ENABLED=ON
 	$(MAKE) -C $(RDIR)/circt-verilog/build install-circt-verilog
 
+# lyra-next
+lyra-next: $(INSTALL_DIR)/bin/lyra-next
+
+$(INSTALL_DIR)/bin/lyra-next:
+	cd $(RDIR)/lyra-next && cargo build --release -p lyra-cli
+	install -D $(RDIR)/lyra-next/target/release/lyra-next $@
+
 # setup the dependencies
-RUNNERS_TARGETS := odin yosys icarus verilator slang zachjs-sv2v tree-sitter-systemverilog tree-sitter-verilog sv-parser moore verible surelog yosys-synlig circt-verilog
+RUNNERS_TARGETS := odin yosys icarus verilator slang zachjs-sv2v tree-sitter-systemverilog tree-sitter-verilog sv-parser moore verible surelog yosys-synlig circt-verilog lyra-next
 .PHONY: $(RUNNERS_TARGETS)
 runners: $(RUNNERS_TARGETS)

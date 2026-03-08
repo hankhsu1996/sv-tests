@@ -100,3 +100,6 @@
 [submodule "third_party/tools/verilator"]
 	path = third_party/tools/verilator
 	url = https://github.com/verilator/verilator
+[submodule "third_party/tools/lyra-next"]
+	path = third_party/tools/lyra-next
+	url = https://github.com/hankhsu1996/lyra-next.git

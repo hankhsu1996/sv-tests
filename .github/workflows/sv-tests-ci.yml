@@ -42,7 +42,8 @@ jobs:
       - name: Install common dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt install -y python3 python3-pip git wget file
+          sudo apt install -y python3 python3-pip git wget file cpanminus
+          sudo cpanm Bit::Vector JSON
           pip install --upgrade setuptools
           pip install -r conf/requirements.txt
 
